@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>售后市场电商表现报表</title>
+
+<script>
+{{PLOTLY_JS}}
+</script>
+
+<style>
+:root {
+    --sidebar-width: 260px;
+    --bosch-color: #005691;
+    --bosch-light: #F4F7F9;
+    --bosch-mid: #B0C4DE;
+    --bosch-dark: #0A2B4E;
+    --bosch-tag-bg: #E6EDF2;
+    --bosch-tag-hover: #CDE0EF;
+    --border-soft: #E2E8F0;
+    --text-muted: #64748B;
+    --bg-card: #FFFFFF;
+    --bg-page: #FAFBFC;
+    --shadow-sm: 0 1px 2px rgba(10, 43, 78, 0.04);
+    --shadow-md: 0 2px 8px rgba(10, 43, 78, 0.06);
+    --radius: 6px;
+    --font-stack: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Helvetica Neue", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body {
+    margin: 0; padding: 0;
+    font-family: var(--font-stack);
+    background: var(--bg-page);
+    color: var(--bosch-dark);
+    font-size: 14px; line-height: 1.5;
+}
+#auth-gate {
+    position: fixed; inset: 0; background: var(--bg-page);
+    z-index: 9999; display: flex; align-items: center; justify-content: center;
+}
+#auth-gate .auth-box {
+    background: var(--bg-card); border: 1px solid var(--border-soft);
+    border-radius: 8px; padding: 40px 36px; width: 360px; box-shadow: var(--shadow-md);
+}
+#auth-gate h2 { margin: 0 0 8px; font-size: 18px; color: var(--bosch-dark); }
+#auth-gate p { margin: 0 0 20px; color: var(--text-muted); font-size: 13px; }
+#auth-gate input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border-soft);
+    border-radius: var(--radius); font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.15s;
+}
+#auth-gate input:focus { border-color: var(--bosch-color); box-shadow: 0 0 0 2px rgba(0,86,145,0.1); }
+#auth-gate button {
+    margin-top: 12px; width: 100%; padding: 10px; background: var(--bosch-color);
+    color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+}
+#auth-gate button:hover { background: var(--bosch-dark); }
+#auth-gate .err { color: #C0392B; font-size: 12px; margin-top: 8px; min-height: 16px; }
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+    width: var(--sidebar-width); min-width: 220px; max-width: 420px;
+    background: var(--bg-card); border-right: 1px solid var(--border-soft);
+    padding: 24px 20px; flex-shrink: 0; position: sticky; top: 0;
+    height: 100vh; overflow-y: auto; overflow-x: hidden;
+}
+.sidebar-resizer {
+    width: 8px; flex-shrink: 0; cursor: col-resize; position: relative;
+    background: linear-gradient(to right, transparent 0, transparent 2px, #E2E8F0 2px, #E2E8F0 4px, transparent 4px, transparent 100%);
+}
+.sidebar-resizer::after {
+    content: ""; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); width: 3px; height: 72px;
+    border-radius: 999px; background: #CBD5E1;
+}
+.sidebar-resizer:hover::after, .sidebar-resizer.dragging::after { background: var(--bosch-color); }
+.sidebar h3 {
+    font-size: 14px; color: var(--text-muted); font-weight: 600; margin: 0 0 16px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+}
+.sidebar label { display: block; font-size: 12px; color: var(--text-muted); margin: 16px 0 6px; font-weight: 500; }
+.sidebar select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border-soft);
+    border-radius: var(--radius); background: #fff; font-size: 14px; font-family: inherit;
+    color: var(--bosch-dark); cursor: pointer; transition: border-color 0.15s;
+}
+.sidebar select:focus { outline: none; border-color: var(--bosch-color); box-shadow: 0 0 0 2px rgba(0,86,145,0.1); }
+.main { flex: 1; min-width: 0; padding: 28px 36px; overflow-x: auto; }
+.main h1 { font-size: 24px; margin: 0 0 6px; font-weight: 700; color: var(--bosch-dark); }
+.caption { color: var(--text-muted); font-size: 12px; margin: 2px 0; }
+.divider { height: 1px; background: var(--border-soft); margin: 20px 0; border: none; }
+.tabs { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 2px solid var(--border-soft); margin: 20px 0 24px; }
+.tab-btn {
+    padding: 10px 18px; background: transparent; border: none; font-family: inherit;
+    font-size: 14px; color: var(--text-muted); cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; font-weight: 500;
+}
+.tab-btn:hover { color: var(--bosch-color); }
+.tab-btn.active { color: var(--bosch-color); border-bottom-color: var(--bosch-color); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+h2.section-title { font-size: 18px; margin: 0 0 16px; color: var(--bosch-dark); font-weight: 600; }
+h3.sub-title { font-size: 14px; margin: 24px 0 12px; color: var(--bosch-dark); font-weight: 600; }
+h4.card-title { font-size: 13px; margin: 0 0 10px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em; }
+.card { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-sm); }
+.card + .card { margin-top: 16px; }
+.metric-grid { display: grid; gap: 12px; }
+.metric-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.metric-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
+@media (max-width: 1100px) { .metric-grid.cols-5 { grid-template-columns: repeat(3, 1fr); } }
+.metric { background: var(--bg-card); padding: 12px 14px; border-radius: var(--radius); border: 1px solid var(--border-soft); }
+.metric .label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+.metric .value { font-size: 22px; font-weight: 700; color: var(--bosch-dark); line-height: 1.2; }
+.metric .delta { font-size: 12px; margin-top: 2px; }
+.metric .delta.up { color: #27AE60; }
+.metric .delta.down { color: #C0392B; }
+.channel-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; }
+.channel-card { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow-sm); }
+.channel-card h3 { margin: 0 0 14px; font-size: 16px; color: var(--bosch-color); font-weight: 600; }
+.chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.chart-grid-7-5 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .chart-grid-2, .chart-grid-7-5 { grid-template-columns: 1fr; } }
+.chart-box { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: var(--radius); padding: 14px; }
+.chart-box h4 { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--bosch-dark); }
+.plot-container { width: 100%; height: 360px; }
+.plot-container.tall { height: 520px; }
+.table-frame { width: 100%; overflow-x: auto; }
+.summary-table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 13px; table-layout: auto; }
+.summary-table th, .summary-table td {
+    padding: 8px 10px; text-align: left;
+    border-bottom: 1px solid var(--border-soft); white-space: nowrap;
+}
+.summary-table th {
+    background: var(--bosch-light); color: var(--bosch-dark);
+    font-weight: 600; font-size: 12px;
+}
+.summary-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.summary-table tr:hover td { background: #F8FAFC; }
+.progress-bar {
+    display: inline-block; width: 100%; min-width: 100px; height: 16px;
+    background: var(--bosch-light); border-radius: 3px; position: relative; overflow: hidden;
+}
+.progress-bar .fill { background: var(--bosch-color); height: 100%; border-radius: 3px; }
+.progress-bar .text {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: #fff; mix-blend-mode: difference;
+}
+
+/* 表头排序按钮样式
+   每个 th 内部改为 flex 布局，标题文字左对齐，两个三角形箭头垂直叠放于右侧。
+   箭头默认灰色，激活（当前排序方向匹配）时变为深色（bosch-dark）。
+   使用纯 CSS border trick 绘制三角形，无需引入额外图标库。 */
+.summary-table th {
+    position: relative; /* 为箭头定位做基准 */
+    user-select: none;
+}
+.th-inner {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+}
+.th-inner:hover { color: var(--bosch-color); }
+.sort-arrows {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+/* 上三角（升序箭头）*/
+.sort-arrow-up {
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 5px solid #CBD3DB; /* 默认灰色 */
+    cursor: pointer;
+    transition: border-bottom-color 0.1s;
+}
+.sort-arrow-up:hover { border-bottom-color: var(--bosch-mid); }
+.sort-arrow-up.active { border-bottom-color: var(--bosch-dark); } /* 激活黑色 */
+/* 下三角（降序箭头）*/
+.sort-arrow-down {
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #CBD3DB; /* 默认灰色 */
+    cursor: pointer;
+    transition: border-top-color 0.1s;
+}
+.sort-arrow-down:hover { border-top-color: var(--bosch-mid); }
+.sort-arrow-down.active { border-top-color: var(--bosch-dark); } /* 激活黑色 */
+
+.brand-picker { margin: 16px 0; }
+.brand-picker .label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
+.brand-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+    padding: 6px 12px; background: #fff; border: 1px solid var(--border-soft);
+    border-radius: 14px; font-size: 12px; cursor: pointer; transition: all 0.15s;
+    user-select: none; color: var(--text-muted);
+}
+.chip:hover { border-color: var(--bosch-mid); color: var(--bosch-dark); }
+.chip.selected { background: var(--bosch-tag-bg); border-color: var(--bosch-mid); color: var(--bosch-color); font-weight: 600; }
+.info-box { padding: 12px 14px; background: var(--bosch-light); border-left: 3px solid var(--bosch-mid); border-radius: 3px; color: var(--text-muted); font-size: 13px; }
+.warn-box { padding: 12px 14px; background: #FFF7E6; border-left: 3px solid #E6B85E; border-radius: 3px; color: #8B6914; font-size: 13px; }
+.err-box { padding: 12px 14px; background: #FDEAEA; border-left: 3px solid #C0392B; border-radius: 3px; color: #8B1F1F; font-size: 13px; }
+@media (max-width: 900px) {
+    .layout { display: block; }
+    .sidebar { width: 100%; max-width: none; min-width: 0; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border-soft); }
+    .sidebar-resizer { display: none; }
+    .main { padding: 20px 16px 28px; }
+}
+</style>
+</head>
+<body>
+
+<div id="auth-gate">
+    <div class="auth-box">
+        <h2>🔒 访问验证</h2>
+        <p>请输入访问密码以查看报表</p>
+        <input type="password" id="auth-input" autofocus placeholder="访问密码">
+        <button id="auth-btn">进入报表</button>
+        <div class="err" id="auth-err"></div>
+    </div>
+</div>
+
+<div class="layout" id="app-layout" style="display:none;">
+    <aside class="sidebar">
+        <h3>🔍 筛选看板</h3>
+        <label for="sel-channel">选择平台</label>
+        <select id="sel-channel"></select>
+        <label for="sel-time">选择时间</label>
+        <select id="sel-time"></select>
+        <div class="caption" style="margin-top:10px;">桌面端可拖动右侧分隔条调整筛选面板宽度</div>
+        <div style="margin-top:32px; padding-top:16px; border-top:1px solid var(--border-soft); font-size:11px; color:var(--text-muted); line-height:1.6;">
+            <div>数据源：情报通</div>
+            <div id="meta-build" style="margin-top:6px;"></div>
+            <div id="meta-source" style="margin-top:2px;"></div>
+        </div>
+    </aside>
+
+    <div class="sidebar-resizer" id="sidebar-resizer" aria-hidden="true"></div>
+
+    <main class="main">
+        <h1>🚗 售后市场电商表现报表</h1>
+        <p class="caption">京东 = 京东国内自营 + 京东海外自营 + 京东国内POP + 京东海外POP</p>
+        <p class="caption">天猫 = 天猫旗舰店全部数据</p>
+        <div class="tabs" id="tabs"></div>
+        <div id="tab-panels"></div>
+    </main>
+</div>
+
+<script id="report-data-json" type="application/json">{{DATA_JSON}}</script>
+
+<script>
+"use strict";
+
+const APP_PASSWORD = "MBL2026";
+
+const COLORS = {
+    bosch: "#005691", boschLight: "#DCEAF4", boschDark: "#0A2B4E", boschMid: "#B0C4DE", bgLight: "#F4F7F9",
+};
+
+const BRAND_PALETTE = [
+    "#8D99AE", "#D4A373", "#5F797B", "#C4A484", "#7B8C9C",
+    "#A89F91", "#9B8B88", "#6C7A89", "#E3D5CA", "#808080"
+];
+
+const OVERVIEW_PRODUCT_ORDER = [
+    "汽机油", "空气滤清器", "燃油滤清器", "机油滤清器", "空调滤清器",
+    "火花塞", "雨刷", "蓄电池", "刹车片", "点火线圈", "喷油嘴", "氧传感器"
+];
+
+const BLUE_SHADES = [
+    "#0A4F8A", "#1B659F", "#2E79B1", "#438DC0", "#5BA0CC",
+    "#73B1D7", "#8AC1E0", "#A2D0E8", "#B9DDF0", "#D0EAF7", "#E5F3FB"
+];
+
+const PLOTLY_FONT = {
+    family: '-apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif',
+    color: "#0A2B4E", size: 12,
+};
+
+const PLOTLY_LAYOUT_BASE = {
+    paper_bgcolor: "#fff", plot_bgcolor: "#fff", font: PLOTLY_FONT,
+    margin: { t: 20, r: 16, b: 50, l: 50 },
+    xaxis: { gridcolor: "#EFF2F5", linecolor: "#CBD3DB", zeroline: false },
+    yaxis: { gridcolor: "#EFF2F5", linecolor: "#CBD3DB", zeroline: false },
+};
+
+const PLOTLY_CONFIG = { displaylogo: false, responsive: false, modeBarButtonsToRemove: ["lasso2d", "select2d"] };
+const _activePlotIds = new Set();
+
+window.addEventListener("resize", () => {
+    _activePlotIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el._fullLayout) Plotly.Plots.resize(el);
+    });
+});
+
+const state = {
+    channel: null, time: null, activeTab: "overview", selectedBrands: {},
+};
+
+const REPORT_DATA = JSON.parse(document.getElementById("report-data-json").textContent);
+window.REPORT_DATA = REPORT_DATA;
+window.data = REPORT_DATA;
+
+// ====================================================================
+// 工具函数
+// ====================================================================
+function parseNumeric(value) {
+    if (value === null || value === undefined || value === "" || value === "null") return 0;
+    if (typeof value === "number") return isNaN(value) ? 0 : value;
+    const text = String(value).replace(/,/g, "").replace(/%/g, "").trim();
+    const num = parseFloat(text);
+    return isNaN(num) ? 0 : num;
+}
+function formatAmountM(value) {
+    if (value === null || value === undefined || value === "" || value === "null") return "N/A";
+    return (parseNumeric(value) / 1_000_000).toLocaleString("en-US", { maximumFractionDigits: 1, minimumFractionDigits: 1 }) + "M";
+}
+function formatVolumeK(value) {
+    if (value === null || value === undefined || value === "" || value === "null") return "N/A";
+    return (parseNumeric(value) / 1_000).toLocaleString("en-US", { maximumFractionDigits: 1, minimumFractionDigits: 1 }) + "K";
+}
+function formatPercent(value, digits = 1) { return parseNumeric(value).toFixed(digits) + "%"; }
+function formatAxisNumber(value, digits = 1) {
+    return parseNumeric(value).toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+function formatYoyDisplay(value) {
+    if (value === null || value === undefined || value === "" || value === "null") return "";
+    const num = parseNumeric(value);
+    if (num < 0) return `🔴↓ ${Math.abs(num).toFixed(1)}%`;
+    if (num > 0) return `🟢↑ ${num.toFixed(1)}%`;
+    return "0.0%";
+}
+function yoyClass(value) {
+    const num = parseNumeric(value);
+    if (num < 0) return "down";
+    if (num > 0) return "up";
+    return "";
+}
+function timeSortKey(value) {
+    const text = String(value || "").trim();
+    if (!text) return [0, 0, 0, text];
+    if (text.indexOf("YTD") >= 0) {
+        const [yp, mp] = text.split("YTD");
+        return [/^\d+$/.test(yp) ? parseInt(yp) : 0, /^\d+$/.test(mp) ? parseInt(mp) : 0, 1, text];
+    }
+    if (text.length === 6 && /^\d+$/.test(text)) return [parseInt(text.slice(0, 4)), parseInt(text.slice(4)), 0, text];
+    const digits = text.replace(/\D/g, "");
+    if (digits.length >= 6) return [parseInt(digits.slice(0, 4)), parseInt(digits.slice(4, 6)), 0, text];
+    return [0, 0, 0, text];
+}
+function compareTime(a, b) {
+    const ka = timeSortKey(a), kb = timeSortKey(b);
+    for (let i = 0; i < 4; i++) { if (ka[i] < kb[i]) return -1; if (ka[i] > kb[i]) return 1; }
+    return 0;
+}
+function isMonthLabel(value) { const t = String(value || "").trim(); return t.length === 6 && /^\d+$/.test(t); }
+function formatTimeLabel(value) {
+    const text = String(value || "").trim();
+    if (text.length === 6 && /^\d+$/.test(text)) return `${text.slice(0, 4)}-${text.slice(4)}`;
+    if (text.indexOf("YTD") >= 0) {
+        const [yp, mp] = text.split("YTD");
+        if (/^\d+$/.test(yp) && /^\d+$/.test(mp)) return `${yp}-${mp}`;
+    }
+    return text;
+}
+function isBoschBrand(value) { const t = String(value || "").toLowerCase(); return t.indexOf("bosch") >= 0 || t.indexOf("博世") >= 0; }
+function buildBrandColorMap(brands) {
+    const map = {}; let idx = 0;
+    for (const b of brands) {
+        const key = String(b); if (key in map) continue;
+        map[key] = isBoschBrand(key) ? COLORS.bosch : BRAND_PALETTE[idx++ % BRAND_PALETTE.length];
+    }
+    return map;
+}
+function getChannelProductOrder(channel) {
+    const filterOrder = ["空气滤清器", "燃油滤清器", "机油滤清器", "空调滤清器"];
+    if (channel === "天猫") return ["汽机油", ...filterOrder, "火花塞", "雨刷", "蓄电池", "刹车片", "点火线圈", "喷油嘴"];
+    if (channel === "京东") return ["雨刷", "火花塞", "蓄电池", "汽机油", ...filterOrder, "刹车片", "点火线圈", "氧传感器"];
+    return [];
+}
+function sortProductsForChannel(rows, channel) { return sortRowsByPreferredOrder(rows, getChannelProductOrder(channel)); }
+function sortRowsByPreferredOrder(rows, preferred) {
+    const rank = {}; preferred.forEach((p, i) => { rank[p] = i; });
+    const fallback = {}; let f = 0;
+    for (const r of rows) { const p = String(r["产品"] || ""); if (!(p in fallback)) fallback[p] = f++; }
+    return [...rows].sort((a, b) => {
+        const pa = String(a["产品"] || ""), pb = String(b["产品"] || "");
+        const ra = (pa in rank) ? rank[pa] : preferred.length + (fallback[pa] ?? 999);
+        const rb = (pb in rank) ? rank[pb] : preferred.length + (fallback[pb] ?? 999);
+        return ra - rb || pa.localeCompare(pb);
+    });
+}
+function getOverviewChannels(rows) {
+    const all = [...new Set(rows.map(r => String(r["渠道"] || "")).filter(Boolean))];
+    const preferred = ["天猫", "京东"];
+    return [...preferred.filter(c => all.includes(c)), ...all.filter(c => !preferred.includes(c))];
+}
+function uniqueValues(rows, col) {
+    return [...new Set(rows.map(r => r[col]).filter(v => v !== null && v !== undefined && v !== ""))];
+}
+
+const FILTER_PRODUCTS = new Set(["空气滤清器", "燃油滤清器", "机油滤清器", "空调滤清器"]);
+
+function buildOverviewProductOrder(overviewRows) {
+    const tmRows = overviewRows.filter(r => String(r["渠道"]) === "天猫");
+    const tmSalesMap = {};
+    for (const r of tmRows) { const p = String(r["产品"] || "").trim(); if (p) tmSalesMap[p] = parseNumeric(r["行业类目销售额"]); }
+    const allProducts = [...new Set(overviewRows.map(r => String(r["产品"] || "").trim()).filter(Boolean))];
+    const filterProds = allProducts.filter(p => FILTER_PRODUCTS.has(p));
+    const nonFilterProds = allProducts.filter(p => !FILTER_PRODUCTS.has(p));
+    filterProds.sort((a, b) => (tmSalesMap[b] || 0) - (tmSalesMap[a] || 0));
+    const filterGroupSales = Math.max(0, ...filterProds.map(p => tmSalesMap[p] || 0));
+    nonFilterProds.sort((a, b) => (tmSalesMap[b] || 0) - (tmSalesMap[a] || 0));
+    const insertIdx = nonFilterProds.findIndex(p => (tmSalesMap[p] || 0) < filterGroupSales);
+    return insertIdx === -1
+        ? [...nonFilterProds, ...filterProds]
+        : [...nonFilterProds.slice(0, insertIdx), ...filterProds, ...nonFilterProds.slice(insertIdx)];
+}
+
+function plotNew(elId, data, layout, config) {
+    _activePlotIds.delete(elId);
+    const el = document.getElementById(elId);
+    if (!el) return;
+    Plotly.purge(el);
+    Plotly.newPlot(elId, data, layout, config || PLOTLY_CONFIG).then(() => Plotly.Plots.resize(el));
+    _activePlotIds.add(elId);
+}
+
+// ====================================================================
+// 密码门
+// ====================================================================
+function setupAuthGate() {
+    const gate = document.getElementById("auth-gate");
+    const layout = document.getElementById("app-layout");
+    const input = document.getElementById("auth-input");
+    const btn = document.getElementById("auth-btn");
+    const err = document.getElementById("auth-err");
+    const submit = () => {
+        if (input.value === APP_PASSWORD) {
+            gate.style.display = "none"; layout.style.display = "flex";
+            try { initApp(); } catch (e) { console.error(e); renderFatalError(`初始化失败：${e && e.message ? e.message : e}`); }
+        } else { err.textContent = "密码不正确，请重试。"; input.select(); }
+    };
+    btn.addEventListener("click", submit);
+    input.addEventListener("keydown", e => { if (e.key === "Enter") submit(); });
+}
+
+function setupSidebarResizer() {
+    const resizer = document.getElementById("sidebar-resizer"); if (!resizer) return;
+    const root = document.documentElement;
+    const savedWidth = window.localStorage.getItem("report-sidebar-width");
+    if (savedWidth) root.style.setProperty("--sidebar-width", savedWidth);
+    let startX = 0, startWidth = 260;
+    const stopDrag = () => { resizer.classList.remove("dragging"); window.removeEventListener("pointermove", onPointerMove); window.removeEventListener("pointerup", stopDrag); };
+    const onPointerMove = event => {
+        const nextWidth = Math.min(420, Math.max(220, startWidth + event.clientX - startX));
+        const widthValue = `${nextWidth}px`;
+        root.style.setProperty("--sidebar-width", widthValue);
+        window.localStorage.setItem("report-sidebar-width", widthValue);
+    };
+    resizer.addEventListener("pointerdown", event => {
+        if (window.innerWidth <= 900) return;
+        startX = event.clientX; startWidth = parseFloat(getComputedStyle(root).getPropertyValue("--sidebar-width")) || 260;
+        resizer.classList.add("dragging");
+        window.addEventListener("pointermove", onPointerMove); window.addEventListener("pointerup", stopDrag);
+    });
+}
+
+// ====================================================================
+// 初始化
+// ====================================================================
+function setSelectOptions(selectEl, values, selectedValue, formatter) {
+    selectEl.innerHTML = "";
+    values.forEach(value => {
+        const option = document.createElement("option");
+        option.value = value; option.textContent = formatter ? formatter(value) : value;
+        option.selected = String(value) === String(selectedValue);
+        selectEl.appendChild(option);
+    });
+}
+function renderFatalError(message) {
+    document.getElementById("auth-gate").style.display = "none";
+    document.getElementById("app-layout").style.display = "flex";
+    document.getElementById("tab-panels").innerHTML = `<div class="err-box">${escapeHtml(message)}</div>`;
+}
+function safeRender() {
+    try { render(); } catch (error) { console.error(error); renderFatalError(`页面渲染失败：${error && error.message ? error.message : error}`); }
+}
+function initApp() {
+    const D = window.REPORT_DATA;
+    if (!D || !Array.isArray(D.industry) || !Array.isArray(D.mkt_share) || !Array.isArray(D.brand_trend)) { renderFatalError("报表数据未正确注入，无法渲染页面。"); return; }
+    if (typeof Plotly === "undefined") { renderFatalError("内嵌 Plotly.js 加载失败，当前 HTML 文件不完整，请重新生成报表。"); return; }
+    const industryRows = D.industry;
+    const channels = getOverviewChannels(industryRows);
+    const times = uniqueValues(industryRows, "时间").map(v => String(v)).sort(compareTime);
+    if (channels.length === 0 || times.length === 0) { renderFatalError("报表数据为空，无法初始化筛选器。"); return; }
+    if (!channels.includes(state.channel)) state.channel = channels[0];
+    if (!times.includes(String(state.time))) state.time = times[times.length - 1];
+    state.activeTab = "overview";
+    const channelSelect = document.getElementById("sel-channel");
+    const timeSelect = document.getElementById("sel-time");
+    setSelectOptions(channelSelect, channels, state.channel);
+    setSelectOptions(timeSelect, times, state.time, formatTimeLabel);
+    channelSelect.onchange = () => { state.channel = channelSelect.value; state.activeTab = "overview"; safeRender(); };
+    timeSelect.onchange = () => { state.time = timeSelect.value; state.activeTab = "overview"; safeRender(); };
+    document.getElementById("meta-build").textContent = D.meta && D.meta.build_time ? `生成时间：${D.meta.build_time}` : "";
+    document.getElementById("meta-source").textContent = D.meta && D.meta.source_file ? `源文件：${D.meta.source_file}` : "";
+    setupSidebarResizer();
+    safeRender();
+}
+
+// ====================================================================
+// 渲染主入口
+// ====================================================================
+function render() {
+    const D = window.REPORT_DATA;
+    const filteredIndustry = D.industry.filter(r => String(r["渠道"]) === state.channel && String(r["时间"]) === String(state.time));
+    const products = sortProductsForChannel(filteredIndustry, state.channel).map(r => String(r["产品"] || "")).filter(Boolean);
+    const tabsBar = document.getElementById("tabs");
+    const tabKeys = ["overview", ...products];
+    const tabLabels = ["📊 平台汇总", ...products];
+    tabsBar.innerHTML = tabKeys.map((k, i) =>
+        `<button class="tab-btn ${k === state.activeTab ? "active" : ""}" data-key="${escapeAttr(k)}">${tabLabels[i]}</button>`
+    ).join("");
+    tabsBar.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => { state.activeTab = btn.dataset.key; safeRender(); });
+    });
+    if (!tabKeys.includes(state.activeTab)) state.activeTab = "overview";
+    _activePlotIds.clear();
+    const panels = document.getElementById("tab-panels");
+    if (state.activeTab === "overview") renderOverview(panels);
+    else renderProductTab(panels, state.activeTab, filteredIndustry);
+}
+
+function escapeAttr(s) { return String(s).replace(/"/g, "&quot;"); }
+function escapeHtml(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+// ====================================================================
+// 平台汇总 Tab
+// ====================================================================
+function renderOverview(container) {
+    const D = window.REPORT_DATA;
+    const OVERVIEW_EXCLUDED_PRODUCTS = new Set(["汽机油", "氧传感器", "喷油嘴"]);
+    const overviewRows = D.industry.filter(r => String(r["时间"]) === String(state.time) && !OVERVIEW_EXCLUDED_PRODUCTS.has(String(r["产品"]).trim())).map(r => ({ ...r }));
+    const channels = getOverviewChannels(overviewRows);
+    const timeLabel = formatTimeLabel(state.time);
+    const overviewProductOrder = buildOverviewProductOrder(overviewRows);
+
+    const summaries = channels.map(ch => {
+        const rows = overviewRows.filter(r => String(r["渠道"]) === ch);
+        const totalSales = rows.reduce((s, r) => s + parseNumeric(r["行业类目销售额"]), 0);
+        const totalVol = rows.reduce((s, r) => s + parseNumeric(r["行业类目销量"]), 0);
+        const boschSales = rows.reduce((s, r) => s + parseNumeric(r["博世_销售额"]), 0);
+        const boschVol = rows.reduce((s, r) => s + parseNumeric(r["博世_销量"]), 0);
+        const productCount = new Set(rows.map(r => r["产品"]).filter(Boolean)).size;
+        return {
+            channel: ch, productCount, totalSales, totalVol, boschSales, boschVol,
+            salesSharePct: totalSales > 0 ? boschSales / totalSales * 100 : 0,
+            volumeSharePct: totalVol > 0 ? boschVol / totalVol * 100 : 0,
+        };
+    }).filter(s => s.productCount > 0);
+
+    let html = `<h2 class="section-title">📈 ${escapeHtml(timeLabel)} 平台汇总</h2>`;
+    html += `<div class="info-box" style="margin-bottom:16px;"><strong>统计范围包括：</strong>四滤、火花塞、雨刷、蓄电池、刹车片、点火线圈</div>`;
+    html += `<h3 class="sub-title">渠道汇总</h3>`;
+    html += `<p class="caption">说明：页面中未特别注明时，"市占率"默认指按销售额口径计算。</p>`;
+    html += `<div class="channel-summary-grid">`;
+    for (const s of summaries) {
+        html += `<div class="channel-card"><h3>${escapeHtml(s.channel)}</h3><div class="metric-grid cols-2">
+            <div class="metric"><div class="label">平台总销售额</div><div class="value">${formatAmountM(s.totalSales)}</div></div>
+            <div class="metric"><div class="label">平台总销量</div><div class="value">${formatVolumeK(s.totalVol)}</div></div>
+            <div class="metric"><div class="label">博世总销售额</div><div class="value">${formatAmountM(s.boschSales)}</div></div>
+            <div class="metric"><div class="label">博世总销量</div><div class="value">${formatVolumeK(s.boschVol)}</div></div>
+            <div class="metric"><div class="label">博世销售额市占率</div><div class="value">${s.salesSharePct.toFixed(1)}%</div></div>
+            <div class="metric"><div class="label">博世销量市占率</div><div class="value">${s.volumeSharePct.toFixed(1)}%</div></div>
+        </div></div>`;
+    }
+    html += `</div><hr class="divider"><h3 class="sub-title">渠道明细</h3>`;
+    html += `<div style="display:grid; grid-template-columns: repeat(${summaries.length}, 1fr); gap:16px;">`;
+    summaries.forEach((s, i) => { html += `<div class="chart-box"><h4>${escapeHtml(s.channel)} 销售额</h4><div class="plot-container" id="ov-sales-${i}"></div></div>`; });
+    html += `</div>`;
+    html += `<div style="display:grid; grid-template-columns: repeat(${summaries.length}, 1fr); gap:16px; margin-top:16px;">`;
+    summaries.forEach((s, i) => { html += `<div class="chart-box"><h4>${escapeHtml(s.channel)} 博世市占率（按销售额）</h4><div id="ov-share-${i}" style="width:100%;"></div></div>`; });
+    html += `</div>`;
+    html += `<h3 class="sub-title">品类汇总表</h3>`;
+    summaries.forEach((s, i) => {
+        html += `<h4 class="card-title" style="margin-top:16px;">${escapeHtml(s.channel)} 品类汇总</h4><div id="ov-table-${i}" class="card" style="padding:0; overflow:auto;"></div>`;
+    });
+
+    container.innerHTML = `<div class="tab-panel active">${html}</div>`;
+
+    setTimeout(() => {
+        summaries.forEach((s, i) => {
+            const rawRows = overviewRows.filter(r => String(r["渠道"]) === s.channel).map(r => ({ ...r }));
+            drawChannelSalesChart(`ov-sales-${i}`, sortProductsForChannel([...rawRows], s.channel));
+            drawChannelShareChart(`ov-share-${i}`, rawRows, s.channel, overviewProductOrder);
+            // 调用新版 renderChannelSummaryTable，传入表格 id 和渠道标识，
+            // 使每张表格有独立的排序状态，互不干扰。
+            renderChannelSummaryTable(`ov-table-${i}`, rawRows, s.channel, overviewProductOrder);
+        });
+    }, 200);
+}
+
+function drawChannelSalesChart(elId, rows) {
+    const sorted = [...rows].sort((a, b) => parseNumeric(b["行业类目销售额"]) - parseNumeric(a["行业类目销售额"]));
+    const products = sorted.map(r => String(r["产品"]));
+    const totalM = sorted.map(r => parseNumeric(r["行业类目销售额"]) / 1_000_000);
+    const boschM = sorted.map(r => parseNumeric(r["博世_销售额"]) / 1_000_000);
+    const otherM = totalM.map((t, i) => Math.max(t - boschM[i], 0));
+    const yMax = Math.max(...totalM, 0) * 1.18 || 1;
+    plotNew(elId, [
+        { x: products, y: boschM, name: "博世销售额", type: "bar", marker: { color: COLORS.bosch }, hovertemplate: "%{x}<br>博世销售额: %{y:,.1f}M<extra></extra>" },
+        { x: products, y: otherM, name: "其他品牌销售额", type: "bar", marker: { color: COLORS.boschLight }, hovertemplate: "%{x}<br>其他品牌销售额: %{y:,.1f}M<extra></extra>" },
+        { x: products, y: totalM, mode: "text", text: totalM.map(v => formatAxisNumber(v)), textposition: "top center", textfont: { color: COLORS.boschDark, size: 11 }, showlegend: false, hoverinfo: "skip", type: "scatter" },
+    ], {
+        ...PLOTLY_LAYOUT_BASE, barmode: "stack",
+        legend: { orientation: "h", yanchor: "bottom", y: 1.02, xanchor: "right", x: 1 },
+        xaxis: { ...PLOTLY_LAYOUT_BASE.xaxis, tickangle: -35, categoryorder: "array", categoryarray: products },
+        yaxis: { ...PLOTLY_LAYOUT_BASE.yaxis, title: "销售额 (M)", ticksuffix: "M", range: [0, yMax] },
+    });
+}
+
+function drawChannelShareChart(elId, rows, channel, productOrder) {
+    const rankMap = {}; productOrder.forEach((p, i) => { rankMap[p] = i; });
+    const sorted = [...rows].sort((a, b) => {
+        const pa = String(a["产品"] || ""), pb = String(b["产品"] || "");
+        const ra = rankMap[pa] !== undefined ? rankMap[pa] : productOrder.length;
+        const rb = rankMap[pb] !== undefined ? rankMap[pb] : productOrder.length;
+        return ra - rb;
+    });
+    const products = sorted.map(r => String(r["产品"]));
+    const shares = sorted.map(r => parseNumeric(r["博世_市占比 (销售额)"]) || 0);
+    const axisMax = Math.max(10, Math.ceil(Math.max(...shares, 0) / 10) * 10);
+    const tickVals = []; for (let i = 0; i <= axisMax; i += 10) tickVals.push(i);
+    const mL = 90, mR = 56, mT = 12, mB = 30, svgW = 460, barH = 22, barGap = 14;
+    const n = products.length, svgH = mT + n * (barH + barGap) - barGap + mB, plotW = svgW - mL - mR;
+    const xScale = v => (v / axisMax) * plotW;
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgW} ${svgH}" style="width:100%;display:block;font-family:-apple-system,BlinkMacSystemFont,PingFang SC,Microsoft YaHei,sans-serif;">`;
+    svg += `<rect width="${svgW}" height="${svgH}" fill="#fff"/>`;
+    tickVals.forEach(v => {
+        const x = mL + xScale(v), gridBottom = mT + n * (barH + barGap) - barGap;
+        svg += `<line x1="${x}" y1="${mT}" x2="${x}" y2="${gridBottom}" stroke="#EFF2F5" stroke-width="1"/>`;
+        svg += `<text x="${x}" y="${svgH - mB + 14}" text-anchor="middle" font-size="11" fill="#64748B">${v}%</text>`;
+    });
+    svg += `<text x="${mL + plotW / 2}" y="${svgH}" text-anchor="middle" font-size="11" fill="#64748B">市占率 (%)</text>`;
+    products.forEach((p, i) => {
+        const y = mT + i * (barH + barGap), bw = Math.max(0, xScale(shares[i])), color = BLUE_SHADES[i % BLUE_SHADES.length];
+        svg += `<text x="${mL - 6}" y="${y + barH / 2 + 4}" text-anchor="end" font-size="12" fill="#0A2B4E">${escapeHtml(p)}</text>`;
+        svg += `<rect x="${mL}" y="${y}" width="${bw}" height="${barH}" fill="${color}" rx="2"/>`;
+        svg += `<text x="${mL + bw + 4}" y="${y + barH / 2 + 4}" font-size="11" fill="#0A2B4E">${shares[i].toFixed(1)}%</text>`;
+    });
+    svg += `</svg>`;
+    const el = document.getElementById(elId); if (el) el.innerHTML = svg;
+}
+
+// ====================================================================
+// 品类汇总表 — 新增列排序功能
+//
+// 改动点：
+// 1. 新增模块级变量 _tableSortState（Map），以表格 elId 为 key，存储
+//    { colKey, direction } 三态：colKey=null 为默认顺序，direction="asc"|"desc"。
+//    每张表格独立维护自己的排序状态，切换平台/时间后自动重置（因 elId 含渠道序号）。
+//
+// 2. 新增辅助函数 TABLE_COLS：声明各列的列名、数值提取函数 getValue(row)、
+//    列对齐方式（是否数字列），供表头渲染和排序逻辑共用。
+//
+// 3. renderChannelSummaryTable 内部逻辑重构：
+//    a. 从 _tableSortState 读取当前排序状态，对 sortedRows 二次排序。
+//    b. 表头改为渲染带 .th-inner 包裹 + .sort-arrows 的结构（见 CSS 部分）。
+//    c. 每个箭头绑定 click 事件：
+//       - 点击升序箭头：若当前已是 asc 则重置为默认，否则设为 asc。
+//       - 点击降序箭头：若当前已是 desc 则重置为默认，否则设为 desc。
+//    d. 状态变更后调用 renderChannelSummaryTable 自身（不触发全局 render），
+//       实现局部刷新，避免图表重绘闪烁。
+// ====================================================================
+
+// 每张品类汇总表独立的排序状态 Map
+// key: elId（如 "ov-table-0"）
+// value: { colKey: string|null, direction: "asc"|"desc"|null }
+const _tableSortState = new Map();
+
+// 各列定义：label=表头显示文字，key=唯一标识，
+// getValue(row)=从数据行中提取用于排序的数值，isNum=是否右对齐数字列
+function getTableCols() {
+    return [
+        {
+            key: "product", label: "品类",
+            getValue: r => String(r["产品"] || ""),
+            isNum: false,
+        },
+        {
+            key: "totalSalesM", label: "大盘销售额 (M)",
+            getValue: r => parseNumeric(r["行业类目销售额"]) / 1_000_000,
+            isNum: true,
+        },
+        {
+            key: "salesYoy", label: "销售额同比",
+            getValue: r => parseNumeric(r["销售额同比"]),
+            isNum: true,
+        },
+        {
+            key: "totalVolK", label: "大盘销量 (K)",
+            getValue: r => parseNumeric(r["行业类目销量"]) / 1_000,
+            isNum: true,
+        },
+        {
+            key: "volYoy", label: "销量同比",
+            getValue: r => parseNumeric(r["销量同比"]),
+            isNum: true,
+        },
+        {
+            key: "brandCount", label: "品牌数",
+            getValue: r => parseNumeric(r["品牌总数量"]),
+            isNum: true,
+        },
+        {
+            key: "boschSalesM", label: "博世销售额 (M)",
+            getValue: r => parseNumeric(r["博世_销售额"]) / 1_000_000,
+            isNum: true,
+        },
+        {
+            key: "boschSalesYoy", label: "博世销售额同比",
+            getValue: r => parseNumeric(r["博世_销售额同比"]),
+            isNum: true,
+        },
+        {
+            key: "boschVolK", label: "博世销量 (K)",
+            getValue: r => parseNumeric(r["博世_销量"]) / 1_000,
+            isNum: true,
+        },
+        {
+            key: "boschVolYoy", label: "博世销量同比",
+            getValue: r => parseNumeric(r["博世_销量同比"]),
+            isNum: true,
+        },
+        {
+            key: "boschShare", label: "博世市占率",
+            getValue: r => parseNumeric(r["博世_市占比 (销售额)"]),
+            isNum: true,
+        },
+    ];
+}
+
+// renderChannelSummaryTable：新增 elId 参数，
+// 内部新增排序状态读取、表头排序箭头渲染、箭头点击事件绑定。
+// 原有的行数据渲染逻辑（td 内容）保持不变。
+function renderChannelSummaryTable(elId, rows, channel, productOrder) {
+    const cols = getTableCols();
+
+    // 读取当前表格的排序状态，初次渲染时默认无排序
+    if (!_tableSortState.has(elId)) {
+        _tableSortState.set(elId, { colKey: null, direction: null });
+    }
+    const sortState = _tableSortState.get(elId);
+
+    // 先按 productOrder 做基础排序（即"默认顺序"）
+    const rankMap = {};
+    productOrder.forEach((p, i) => { rankMap[p] = i; });
+    let sortedRows = [...rows].sort((a, b) => {
+        const pa = String(a["产品"] || ""), pb = String(b["产品"] || "");
+        const ra = rankMap[pa] !== undefined ? rankMap[pa] : productOrder.length;
+        const rb = rankMap[pb] !== undefined ? rankMap[pb] : productOrder.length;
+        return ra - rb;
+    });
+
+    // 若当前有激活的排序列，在基础顺序上二次排序
+    if (sortState.colKey !== null && sortState.direction !== null) {
+        const col = cols.find(c => c.key === sortState.colKey);
+        if (col) {
+            const dir = sortState.direction === "asc" ? 1 : -1;
+            sortedRows = [...sortedRows].sort((a, b) => {
+                const va = col.getValue(a), vb = col.getValue(b);
+                if (typeof va === "string" && typeof vb === "string") return dir * va.localeCompare(vb);
+                return dir * (va - vb);
+            });
+        }
+    }
+
+    // 构建表头 HTML：每个 th 内用 .th-inner 包裹标题文字和
+    // .sort-arrows（含上下三角），激活状态通过 .active class 控制颜色。
+    const theadHtml = cols.map(col => {
+        const isActive = sortState.colKey === col.key;
+        const upActive = isActive && sortState.direction === "asc";
+        const downActive = isActive && sortState.direction === "desc";
+        return `<th>
+            <span class="th-inner" data-col="${escapeAttr(col.key)}" data-elid="${escapeAttr(elId)}">
+                ${escapeHtml(col.label)}
+                <span class="sort-arrows">
+                    <span class="sort-arrow-up${upActive ? " active" : ""}" data-col="${escapeAttr(col.key)}" data-dir="asc" data-elid="${escapeAttr(elId)}" title="升序"></span>
+                    <span class="sort-arrow-down${downActive ? " active" : ""}" data-col="${escapeAttr(col.key)}" data-dir="desc" data-elid="${escapeAttr(elId)}" title="降序"></span>
+                </span>
+            </span>
+        </th>`;
+    }).join("");
+
+    // 行数据渲染（内容与原代码完全一致，仅来源改为 sortedRows）
+    const tbodyHtml = sortedRows.map(r => {
+        const p = String(r["产品"] || "");
+        const totalM = parseNumeric(r["行业类目销售额"]) / 1_000_000;
+        const totalK = parseNumeric(r["行业类目销量"]) / 1_000;
+        const boschM = parseNumeric(r["博世_销售额"]) / 1_000_000;
+        const boschK = parseNumeric(r["博世_销量"]) / 1_000;
+        const share = parseNumeric(r["博世_市占比 (销售额)"]);
+        return `<tr>
+            <td>${escapeHtml(p)}</td>
+            <td class="num">${totalM.toFixed(1)} M</td>
+            <td>${formatYoyDisplay(r["销售额同比"])}</td>
+            <td class="num">${totalK.toFixed(1)} K</td>
+            <td>${formatYoyDisplay(r["销量同比"])}</td>
+            <td class="num">${parseNumeric(r["品牌总数量"])}</td>
+            <td class="num">${boschM.toFixed(1)} M</td>
+            <td>${formatYoyDisplay(r["博世_销售额同比"])}</td>
+            <td class="num">${boschK.toFixed(1)} K</td>
+            <td>${formatYoyDisplay(r["博世_销量同比"])}</td>
+            <td><div class="progress-bar"><div class="fill" style="width:${Math.max(0, Math.min(100, share))}%"></div><div class="text">${share.toFixed(1)}%</div></div></td>
+        </tr>`;
+    }).join("");
+
+    const tableEl = document.getElementById(elId);
+    if (!tableEl) return;
+    tableEl.innerHTML = `<div class="table-frame"><table class="summary-table">
+        <thead><tr>${theadHtml}</tr></thead>
+        <tbody>${tbodyHtml}</tbody>
+    </table></div>`;
+
+    // 绑定箭头点击事件：
+    // 点击上箭头（asc）：若已是 asc 则重置为默认，否则设为 asc。
+    // 点击下箭头（desc）：若已是 desc 则重置为默认，否则设为 desc。
+    // 状态更新后重新调用 renderChannelSummaryTable（局部刷新，不触发全局 render）。
+    tableEl.querySelectorAll(".sort-arrow-up, .sort-arrow-down").forEach(arrow => {
+        arrow.addEventListener("click", e => {
+            e.stopPropagation();
+            const targetElId = arrow.dataset.elid;
+            const colKey = arrow.dataset.col;
+            const dir = arrow.dataset.dir; // "asc" or "desc"
+            const cur = _tableSortState.get(targetElId) || { colKey: null, direction: null };
+
+            if (cur.colKey === colKey && cur.direction === dir) {
+                // 再次点击同一箭头 → 重置为默认顺序
+                _tableSortState.set(targetElId, { colKey: null, direction: null });
+            } else {
+                _tableSortState.set(targetElId, { colKey, direction: dir });
+            }
+
+            // 局部刷新：重新渲染当前表格，不触发全局 render 避免图表重绘
+            renderChannelSummaryTable(targetElId, rows, channel, productOrder);
+        });
+    });
+}
+
+// ====================================================================
+// 品类 Tab
+// ====================================================================
+function renderProductTab(container, product, filteredIndustry) {
+    const D = window.REPORT_DATA;
+    const prodInd = filteredIndustry.find(r => String(r["产品"]) === product);
+    if (!prodInd) { container.innerHTML = `<div class="tab-panel active"><div class="warn-box">当前筛选条件下无该品类数据。</div></div>`; return; }
+
+    let html = `<div class="tab-panel active">`;
+    html += `<h2 class="section-title">📊 ${escapeHtml(product)} - 核心业务指标</h2>`;
+    if (product === "汽机油") {
+        html += `<div class="warn-box" style="margin-bottom:16px;">⚠️ <strong>数据说明：</strong>情报通仅提供该品类销售额TOP30品牌的明细数据，博世汽机油当前未进入TOP30，因此暂无博世相关数据，敬请知悉。</div>`;
+    }
+    html += `<div class="metric-grid cols-5">
+        ${metricHtml("大盘总销售额", formatAmountM(prodInd["行业类目销售额"]), prodInd["销售额同比"])}
+        ${metricHtml("大盘总销量", formatVolumeK(prodInd["行业类目销量"]), prodInd["销量同比"])}
+        ${metricHtml("博世销售额", formatAmountM(prodInd["博世_销售额"]), prodInd["博世_销售额同比"])}
+        ${metricHtml("博世销量", formatVolumeK(prodInd["博世_销量"]), prodInd["博世_销量同比"])}
+        ${metricHtml("博世市占率（按销售额）", formatPercent(prodInd["博世_市占比 (销售额)"]), null)}
+    </div>`;
+
+    html += `<h3 class="sub-title" style="margin-top:24px;">TOP品牌市占率分布（按销售额）</h3>`;
+    const mktRows = D.mkt_share.filter(r => String(r["渠道"]) === state.channel && String(r["时间"]) === String(state.time) && String(r["产品"]) === product);
+    if (mktRows.length === 0) html += `<div class="info-box">暂无市占率明细数据</div>`;
+    else html += `<div class="chart-box"><div class="plot-container tall" id="pie-${cssId(product)}"></div></div>`;
+
+    html += `<hr class="divider"><h3 class="sub-title">品牌对比</h3>`;
+    const brandHistory = D.brand_trend.filter(r => String(r["渠道"]) === state.channel && String(r["产品"]) === product);
+    const brandCurrent = brandHistory.filter(r => String(r["时间"]) === String(state.time));
+
+    if (brandCurrent.length === 0) {
+        html += `<div class="info-box">当前时间下暂无品牌销售额、销量和均价明细。</div>`;
+    } else {
+        const brandOptions = [...new Set(brandHistory.map(r => String(r["品牌"])).filter(Boolean))];
+        const stateKey = `${state.channel}|${state.time}|${product}`;
+        if (!state.selectedBrands[stateKey]) {
+            const top3 = [...brandCurrent].sort((a, b) => parseNumeric(b["销售额"]) - parseNumeric(a["销售额"])).slice(0, 3).map(r => String(r["品牌"]));
+            state.selectedBrands[stateKey] = top3.filter(b => brandOptions.includes(b));
+        }
+        const selected = state.selectedBrands[stateKey];
+        html += `<div class="brand-picker"><div class="label">选择要对比的品牌（点击切换）</div><div class="brand-chips" id="chips-${cssId(product)}">
+            ${brandOptions.map(b => `<span class="chip ${selected.includes(b) ? "selected" : ""}" data-brand="${escapeAttr(b)}">${escapeHtml(b)}</span>`).join("")}
+        </div></div>`;
+        if (selected.length === 0) {
+            html += `<div class="info-box">请选择至少一个品牌进行对比。</div>`;
+        } else {
+            html += `<div class="chart-grid-2">
+                <div class="chart-box"><h4>当前销售额对比</h4><div class="plot-container" id="cmp-sales-${cssId(product)}"></div></div>
+                <div class="chart-box"><h4>当前销量对比</h4><div class="plot-container" id="cmp-qty-${cssId(product)}"></div></div>
+            </div>`;
+            html += `<div class="chart-box" style="margin-top:16px;"><h4>历史月度销售额趋势</h4><div class="plot-container" id="hist-sales-${cssId(product)}"></div></div>`;
+            html += `<div class="chart-box" style="margin-top:16px;"><h4>历史月度销量趋势</h4><div class="plot-container" id="hist-qty-${cssId(product)}"></div></div>`;
+            html += `<div class="chart-box" style="margin-top:16px;"><h4>历史月度均价趋势</h4><div class="plot-container" id="hist-price-${cssId(product)}"></div></div>`;
+        }
+    }
+    html += `</div>`;
+    container.innerHTML = html;
+
+    if (brandCurrent.length > 0) {
+        const stateKey = `${state.channel}|${state.time}|${product}`;
+        const chipsContainer = document.getElementById(`chips-${cssId(product)}`);
+        if (chipsContainer) {
+            chipsContainer.querySelectorAll(".chip").forEach(chip => {
+                chip.addEventListener("click", () => {
+                    const b = chip.dataset.brand;
+                    const arr = state.selectedBrands[stateKey];
+                    const idx = arr.indexOf(b);
+                    if (idx >= 0) arr.splice(idx, 1); else arr.push(b);
+                    safeRender();
+                });
+            });
+        }
+    }
+
+    setTimeout(() => {
+        if (mktRows.length > 0) drawTopBrandsCharts(product, mktRows);
+        if (brandCurrent.length > 0) {
+            const stateKey = `${state.channel}|${state.time}|${product}`;
+            const selected = state.selectedBrands[stateKey] || [];
+            if (selected.length > 0) drawBrandComparison(product, brandCurrent, brandHistory, selected);
+        }
+    }, 200);
+}
+
+function metricHtml(label, value, delta) {
+    const deltaText = formatYoyDisplay(delta), deltaCls = yoyClass(delta);
+    return `<div class="metric"><div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(value)}</div><div class="delta ${deltaCls}">${escapeHtml(deltaText)}</div></div>`;
+}
+function cssId(s) { return String(s).replace(/[^A-Za-z0-9_-]/g, "_"); }
+
+function drawTopBrandsCharts(product, mktRows) {
+    const MERGE_THRESHOLD = 1.0;
+    const rows = [...mktRows].map(r => ({ brand: String(r["品牌"]), share: parseNumeric(r["MktShare"]) })).filter(r => r.share > 0).sort((a, b) => b.share - a.share);
+    const labels = [], values = [];
+    let othersShare = 0;
+    rows.forEach(r => { if (r.share < MERGE_THRESHOLD) othersShare += r.share; else { labels.push(r.brand); values.push(r.share); } });
+    const top10Total = rows.reduce((sum, r) => sum + r.share, 0);
+    othersShare += Math.max(0, 100 - top10Total);
+    if (othersShare > 0.01) { labels.push("Others"); values.push(othersShare); }
+    const colorMap = buildBrandColorMap(labels);
+    const colors = labels.map(label => label === "Others" ? "#D9D9D9" : colorMap[label]);
+    plotNew(`pie-${cssId(product)}`, [{
+        type: "pie", hole: 0.55, labels, values, sort: false, automargin: true,
+        marker: { colors, line: { color: "#ffffff", width: 2 } },
+        textposition: "outside", textfont: { size: 11 }, customdata: values,
+        texttemplate: "%{label}<br>%{customdata:.1f}%",
+        hovertemplate: "<b>%{label}</b><br>市场份额: %{customdata:.1f}%<extra></extra>",
+        pull: labels.map(() => 0),
+    }], {
+        ...PLOTLY_LAYOUT_BASE, autosize: true, height: 560,
+        margin: { t: 40, b: 40, l: 120, r: 220 }, showlegend: true,
+        legend: { orientation: "v", x: 1.02, xanchor: "left", y: 0.5, yanchor: "middle", font: { size: 11 } },
+    });
+}
+
+function drawBrandComparison(product, brandCurrent, brandHistory, selected) {
+    const colorMap = buildBrandColorMap(selected);
+    const currentRows = brandCurrent.filter(r => selected.includes(String(r["品牌"])));
+    const sortedSales = [...currentRows].sort((a, b) => parseNumeric(b["销售额"]) - parseNumeric(a["销售额"]));
+    const sortedQty = [...currentRows].sort((a, b) => parseNumeric(b["销量"]) - parseNumeric(a["销量"]));
+    plotNew(`cmp-sales-${cssId(product)}`,
+        [{ type: "bar", x: sortedSales.map(r => String(r["品牌"])), y: sortedSales.map(r => parseNumeric(r["销售额"]) / 1_000_000), text: sortedSales.map(r => formatAxisNumber(parseNumeric(r["销售额"]) / 1_000_000)), textposition: "outside", marker: { color: sortedSales.map(r => colorMap[String(r["品牌"])]) }, hovertemplate: "%{x}<br>销售额: %{y:.1f}M<extra></extra>" }],
+        { ...PLOTLY_LAYOUT_BASE, showlegend: false, yaxis: { ...PLOTLY_LAYOUT_BASE.yaxis, title: "销售额 (M)", ticksuffix: "M" } }
+    );
+    plotNew(`cmp-qty-${cssId(product)}`,
+        [{ type: "bar", x: sortedQty.map(r => String(r["品牌"])), y: sortedQty.map(r => parseNumeric(r["销量"]) / 1_000), text: sortedQty.map(r => formatAxisNumber(parseNumeric(r["销量"]) / 1_000)), textposition: "outside", marker: { color: sortedQty.map(r => colorMap[String(r["品牌"])]) }, hovertemplate: "%{x}<br>销量: %{y:.1f}K<extra></extra>" }],
+        { ...PLOTLY_LAYOUT_BASE, showlegend: false, yaxis: { ...PLOTLY_LAYOUT_BASE.yaxis, title: "销量 (K)", ticksuffix: "K" } }
+    );
+    const monthRows = brandHistory.filter(r => isMonthLabel(r["时间"]) && selected.includes(String(r["品牌"])));
+    const monthsRaw = [...new Set(monthRows.map(r => String(r["时间"])))].sort(compareTime);
+    const monthLabels = monthsRaw.map(formatTimeLabel);
+    function buildLineSeries(metric, transform) {
+        return selected.map(b => {
+            const row = monthsRaw.map(m => { const found = monthRows.find(r => String(r["品牌"]) === b && String(r["时间"]) === m); return found ? transform(parseNumeric(found[metric])) : null; });
+            return { x: monthLabels, y: row, name: b, type: "scatter", mode: "lines+markers", line: { color: colorMap[b], width: 3 }, marker: { color: colorMap[b], size: 8, line: { color: "#fff", width: 1 } }, connectgaps: true };
+        });
+    }
+    if (monthsRaw.length > 0) {
+        const xAxis = { ...PLOTLY_LAYOUT_BASE.xaxis, type: "category", tickangle: -45, categoryorder: "array", categoryarray: monthLabels };
+        plotNew(`hist-sales-${cssId(product)}`, buildLineSeries("销售额", v => v / 1_000_000), { ...PLOTLY_LAYOUT_BASE, xaxis: xAxis, yaxis: { ...PLOTLY_LAYOUT_BASE.yaxis, title: "销售额 (M)", ticksuffix: "M" } });
+        plotNew(`hist-qty-${cssId(product)}`, buildLineSeries("销量", v => v / 1_000), { ...PLOTLY_LAYOUT_BASE, xaxis: xAxis, yaxis: { ...PLOTLY_LAYOUT_BASE.yaxis, title: "销量 (K)", ticksuffix: "K" } });
+        plotNew(`hist-price-${cssId(product)}`, buildLineSeries("均价", v => v), { ...PLOTLY_LAYOUT_BASE, xaxis: xAxis, yaxis: { ...PLOTLY_LAYOUT_BASE.yaxis, title: "均价" } });
+    }
+}
+
+window.addEventListener("error", event => { renderFatalError(`页面脚本错误：${event && event.message ? event.message : "未知脚本错误"}`); });
+document.addEventListener("DOMContentLoaded", setupAuthGate);
+</script>
+</body>
+</html>
